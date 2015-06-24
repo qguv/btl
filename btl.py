@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from itertools import zip_longest
+from enum import Enum
 
 def print_side_by_side(a, b, sep=' ', fill=' ', empty=' ', fill_right=False, really_print=True):
     alines = str(a).split('\n')
@@ -34,9 +35,16 @@ def print_side_by_side(a, b, sep=' ', fill=' ', empty=' ', fill_right=False, rea
     print(lines)
 
 def col_row_from_str(s):
+    s = s.lower()
     col = ord(s[0].lower()) - ord('a')
     row = int(s[1:]) - 1
     return (col, row)
+
+ships = dict(carrier    = 5,
+             battleship = 4,
+             destroyer  = 3,
+             submarine  = 3,
+             patrolboat = 2)
 
 class Field:
     def __init__(self, name, size=10, default='.', sep=' '):
@@ -95,9 +103,9 @@ class Field:
         return self.array[self.cell_index_from_str(key)]
 
     def __setitem__(self, key, value):
-        self.array[self.cell_index_from_str(key)] = value
+        self.array[self.cell_index_from_str(key)] = str(value)[0]
 
-    def place_ship(self, abbr, at, length, vertical=False, reverse=False):
+    def place_ship(self, name, at, vertical=False, reverse=False, abbr=None, length=None):
         '''Give this method the top-left point of the ship.'''
 
         if vertical:
@@ -108,17 +116,27 @@ class Field:
         if reverse:
             delta *= -1
 
+        if abbr is None:
+            abbr = name[0]
+
+        if length is None:
+            try:
+                length = ships[name.lower()]
+            except KeyError:
+                m = "Can't guess length of unknown ship {}!".format(name)
+                print(m)
+                raise KeyError(m)
+
         i = self.cell_index_from_str(at)
         while length > 0:
             self.array[i] = abbr
             length -= 1
             i += delta
 
-    def place_right(self, abbr, at, length):
-        return self.place_ship(abbr, at, length)
-    def place_left(self, abbr, at, length):
-        return self.place_ship(abbr, at, length, reverse=True)
-    def place_down(self, abbr, at, length):
-        return self.place_ship(abbr, at, length, vertical=True)
-    def place_up(self, abbr, at, length):
-        return self.place_ship(abbr, at, length, vertical=True, reverse=True)
+    def place(self, name, at, direction, abbr=None, length=None):
+        direction = direction.lower()
+
+        is_vertical = direction in ("down", "up", 'd', 'u')
+        is_reversed = direction in ("left", "up", 'l', 'u')
+
+        return self.place_ship(name, at, is_vertical, is_reversed, abbr, length)

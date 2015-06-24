@@ -2,6 +2,7 @@
 
 import btl
 from time import sleep
+from sys import exit
 
 def clear(height=200):
     for i in range(height):
@@ -14,72 +15,53 @@ HIT     = '#'
 allies  = btl.Field("Allies",  default=UNKNOWN)
 enemies = btl.Field("Enemies", default=UNKNOWN)
 
-lengths = {"p": 2,
-           "d": 3,
-           "s": 3,
-           "b": 4,
-           "c": 5}
-
-place_fns = {"l": allies.place_left,
-             "d": allies.place_down,
-             "r": allies.place_right,
-             "u": allies.place_up}
-
-# main script functionality
+# place ships
 try:
 
-    # place ships
-    ships = list("pdsbc")
+    ships = "Carrier Battleship Destroyer Submarine Patrolboat".split(' ')
     while ships:
+        ship = ships[0]
+
         clear()
         print(allies)
 
         while True:
             try:
-                abbr = input("Which ship? [{}] ".format(''.join(ships)))[0]
-                length = lengths[abbr]
-                ships.remove(abbr)
+                cell = input("Place {} where? [A1-J10] ".format(ship))
+                allies[cell] = ship[0]
                 break
             except (IndexError, KeyError, ValueError):
                 clear()
-                print(allies, "What?", end=' ')
+                print(allies, "What?", sep='\n', end=' ')
 
         clear()
         print(allies)
 
         while True:
-            try:
-                cell = input("Where? [a1-j10] ").lower()
-                allies[cell] = abbr.upper()
-                break
-            except (IndexError, KeyError):
-                clear()
-                print(allies, "What?", end=' ')
+            # try:
+            direction = input("Which way? [ldru] ")
+            allies.place(ship, cell, direction)
+            break
 
-        clear()
-        print(allies)
-
-        while True:
-            try:
-                place_fn = place_fns[input("Which way? [ldru] ").lower()]
-                place_fn(abbr.upper(), cell, length)
-                break
-            except KeyError:
-                clear()
-                input(allies, "What?", end=' ')
+        ships.remove(ship)
 
     clear()
     btl.print_side_by_side(enemies, allies)
     enemies_first = input("Are you going first? [yN] ").lower() != 'y'
 
-    clear()
-    btl.print_side_by_side(enemies, allies)
+except KeyboardInterrupt:
+    print("\nQuit before game began!")
+    exit(1)
 
-    allies_have_gone = False
+clear()
+btl.print_side_by_side(enemies, allies)
 
-    # game loop
-    while True:
+allies_have_gone = False
 
+# game loop
+while True:
+
+    try:
         # enemies move
         if allies_have_gone or enemies_first:
 
@@ -126,6 +108,20 @@ try:
         clear()
         btl.print_side_by_side(enemies, allies)
 
-except KeyboardInterrupt:
-    clear()
-    btl.print_side_by_side(enemies, allies)
+    except EOFError:
+        try:
+            while True:
+                clear()
+                btl.print_side_by_side(enemies, allies)
+
+                cell_raw = input("Which square? [e or a] + [a1-j10] ")
+                team, cell = cell_raw[0], cell_raw[1:]
+                board = allies if team.lower() == 'a' else enemies
+
+                board[cell] = input("Change to what? ")
+        except (KeyboardInterrupt, EOFError):
+            print()
+            continue
+    except KeyboardInterrupt:
+        print()
+        exit(0)
