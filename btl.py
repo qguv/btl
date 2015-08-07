@@ -3,6 +3,10 @@
 from itertools import zip_longest
 from enum import Enum
 
+def clear(height=200):
+    for i in range(height):
+        print()
+
 def print_side_by_side(a, b, sep=' ', fill=' ', empty=' ', fill_right=False, really_print=True):
     alines = str(a).split('\n')
     blines = str(b).split('\n')
